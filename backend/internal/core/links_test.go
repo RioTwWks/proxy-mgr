@@ -75,6 +75,20 @@ func TestGenerateXrayConfig(t *testing.T) {
 	if !strings.Contains(body, "uuid-1") || !strings.Contains(body, "a@example.com") {
 		t.Fatalf("missing user in config: %s", body)
 	}
+	if !strings.Contains(body, `"listen": "127.0.0.1:10085"`) {
+		t.Fatalf("expected api listen address in config: %s", body)
+	}
+}
+
+func TestGenerateXrayConfigDockerInternalListen(t *testing.T) {
+	data, err := generateXrayConfig(443, "host.docker.internal:10085", nil, nil, MultihopData{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(data)
+	if !strings.Contains(body, `"listen": "0.0.0.0:10085"`) {
+		t.Fatalf("expected host-network bind address, got: %s", body)
+	}
 }
 
 func TestGenerateSingboxConfig(t *testing.T) {

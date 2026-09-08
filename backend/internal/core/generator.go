@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"embed"
+	"net"
 	"strings"
 	"text/template"
 
@@ -14,12 +15,29 @@ import (
 var templateFS embed.FS
 
 type templateData struct {
-	ListenPort  int
-	APIAddress  string
-	Users       []models.User
-	Stealth     *config.StealthConfig
-	Multihop    MultihopData
-	InboundTags []string
+	ListenPort       int
+	APIAddress       string
+	APIListenAddress string
+	Users            []models.User
+	Stealth          *config.StealthConfig
+	Multihop         MultihopData
+	InboundTags      []string
+}
+
+// xrayAPIListenAddress returns the bind address for Xray's stats API in generated config.
+// api_address in config.yaml is used by the backend to query stats (often host.docker.internal
+// from the bridge network). Xray runs with network_mode: host on Linux and cannot resolve
+// host.docker.internal unless it is added to the host's /etc/hosts.
+func xrayAPIListenAddress(apiAddress string) string {
+	host, port, err := net.SplitHostPort(apiAddress)
+	if err != nil {
+		return apiAddress
+	}
+	if host == "host.docker.internal" {
+		// Bind on all interfaces so backend (bridge) can reach via host-gateway.
+		return "0.0.0.0:" + port
+	}
+	return apiAddress
 }
 
 func renderTemplate(name string, data templateData) ([]byte, error) {
@@ -88,12 +106,13 @@ func jsonStringList(items []string) string {
 
 func generateXrayConfig(listenPort int, apiAddress string, users []models.User, stealth *config.StealthConfig, multihop MultihopData) ([]byte, error) {
 	return renderTemplate("xray.json.tmpl", templateData{
-		ListenPort:  listenPort,
-		APIAddress:  apiAddress,
-		Users:       users,
-		Stealth:     stealth,
-		Multihop:    multihop,
-		InboundTags: CollectInboundTags(stealth, "vless-in"),
+		ListenPort:       listenPort,
+		APIAddress:       apiAddress,
+		APIListenAddress: xrayAPIListenAddress(apiAddress),
+		Users:            users,
+		Stealth:          stealth,
+		Multihop:         multihop,
+		InboundTags:      CollectInboundTags(stealth, "vless-in"),
 	})
 }
 

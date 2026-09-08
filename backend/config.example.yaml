@@ -13,7 +13,7 @@ core:
   xray:
     config_path: "./data/xray/config.json"
     binary_path: "/usr/local/bin/xray"
-    api_address: "host.docker.internal:10085"
+    api_address: "host.docker.internal:10085"   # backend stats URL; xray binds 0.0.0.0:10085 on Linux host network
   singbox:
     config_path: "./data/sing-box/config.json"
     binary_path: "/usr/local/bin/sing-box"
