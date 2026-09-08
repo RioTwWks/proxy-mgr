@@ -37,16 +37,16 @@ RioNexGate поддерживает цепочки прокси **entry → exit
 
 ## Глоссарий
 
-| Term | Definition |
-|------|------------|
-| **Entry node** | The client-facing hop. Users connect here with VLESS (optionally Reality / XHTTP / Vision). Stored in the `nodes` table with `role: entry`. Client links, QR codes, and subscriptions always resolve to the entry `address:port`. |
-| **Exit node** | The Internet egress hop. The entry server's Xray opens a VLESS outbound to this host using relay credentials stored in the exit node record. Stored with `role: exit`. Never exposed to clients. |
-| **Relay user** | A dedicated VLESS user on the EU exit inbound whose UUID is copied into the exit node's `credentials.uuid` on the RU panel. Not the same as end-user UUIDs. |
-| **Chain tag** | Xray outbound tag for the chained freedom outbound: `exit-<name>-chain`, where `<name>` is the unique exit node `name` field. Routing rules send user traffic to this tag. |
-| **Outbound tag** | The direct VLESS outbound tag to the exit: `exit-<name>` (from `Node.OutboundTag()`). The `-chain` outbound proxies through this tag via `proxySettings`. |
-| **`local_role`** | Field in `core.multihop` (`entry` or other). Only `enabled: true` **and** `local_role: entry` triggers `BuildMultihopData` and chain generation (`MultihopConfig.IsEntryNode()`). |
-| **Auto resolution** | When a user has no explicit `entry_node_id` / `exit_node_id`, the panel picks the **lowest `priority`** among **active** nodes of that role (`ORDER BY priority ASC, id ASC`). |
-| **`ResolveClientEndpoint`** | Go function that returns `{Host, Port}` for client-facing output. Uses the resolved entry node if present; otherwise falls back to `core.public_host` and `core.listen_port`. Exit nodes are never passed in. |
+| Термин | Определение |
+|--------|-------------|
+| **Entry-узел (входящий)** | Клиентский hop. Пользователи подключаются сюда по VLESS (опционально Reality / XHTTP / Vision). Хранится в таблице `nodes` с `role: entry`. Ссылки, QR-коды и подписки всегда указывают на `address:port` entry-узла. |
+| **Exit-узел (исходящий)** | Hop выхода в Интернет. Xray на entry-сервере открывает VLESS outbound на этот хост, используя relay credentials из записи exit-узла. Хранится с `role: exit`. Клиентам не публикуется. |
+| **Relay user (релейный пользователь)** | Выделенный VLESS-пользователь на EU exit inbound; его UUID копируется в `credentials.uuid` exit-узла на RU-панели. Не совпадает с UUID конечных пользователей. |
+| **Chain tag (тег цепочки)** | Тег Xray outbound для chained freedom outbound: `exit-<name>-chain`, где `<name>` — уникальное поле `name` exit-узла. Правила routing направляют трафик пользователей на этот тег. |
+| **Outbound tag (тег исходящего)** | Прямой VLESS outbound на exit: `exit-<name>` (из `Node.OutboundTag()`). Outbound `-chain` проксирует через этот тег через `proxySettings`. |
+| **`local_role`** | Поле в `core.multihop` (`entry` или другое). Только `enabled: true` **и** `local_role: entry` запускает `BuildMultihopData` и генерацию цепочки (`MultihopConfig.IsEntryNode()`). |
+| **Авторазрешение** | Если у пользователя нет явных `entry_node_id` / `exit_node_id`, панель выбирает узел с **наименьшим `priority`** среди **активных** узлов этой роли (`ORDER BY priority ASC, id ASC`). |
+| **`ResolveClientEndpoint`** | Go-функция, возвращающая `{Host, Port}` для клиентского вывода. Использует разрешённый entry-узел, если есть; иначе — `core.public_host` и `core.listen_port`. Exit-узлы никогда не передаются. |
 
 ---
 
@@ -71,14 +71,14 @@ sequenceDiagram
   participant Web as Target website
 
   Client->>RU: VLESS handshake (Reality/XHTTP/Vision)
-  Note over Client,RU: DPI sees client ↔ RU only
+  Note over Client,RU: DPI видит только клиент ↔ RU
   RU->>RU: Routing rule matches user email
   RU->>EU: VLESS outbound (relay UUID + hop transport)
   EU->>Web: TCP/TLS to destination
   Web-->>EU: Response
   EU-->>RU: Relayed traffic
   RU-->>Client: Response
-  Note over Web: Sees EU egress IP
+  Note over Web: Видит EU egress IP
 ```
 
 ASCII-эквивалент:
@@ -114,7 +114,7 @@ ASCII-эквивалент:
 2. **freedom outbound** с `proxySettings`, цепляющимся к VLESS outbound (тег: `exit-<name>-chain`).
 3. **Правило routing**, сопоставляющее email пользователей с тегом chained outbound (`exit-<name>-chain`).
 
-See [`backend/internal/core/templates/xray.json.tmpl`](../backend/internal/core/templates/xray.json.tmpl) and [`multihop.go`](../backend/internal/core/multihop.go).
+См. [`backend/internal/core/templates/xray.json.tmpl`](../backend/internal/core/templates/xray.json.tmpl) и [`multihop.go`](../backend/internal/core/multihop.go).
 
 ---
 
@@ -124,24 +124,24 @@ See [`backend/internal/core/templates/xray.json.tmpl`](../backend/internal/core/
 
 | Порт | Протокол | Направление | Сервис | Примечания |
 |------|----------|-----------|---------|-------|
-| **443** | TCP | Client → RU | XHTTP + Reality inbound (typical) | Основной stealth-порт при `core.stealth.xhttp.enabled: true` |
-| **8443** | TCP | Client → RU | Vision + Reality inbound (typical) | Дополнительный stealth-порт при `core.stealth.vision.enabled: true` |
-| **2053** | TCP | Client → RU | VLESS + TLS inbound (optional) | При `core.stealth.tls.enabled: true`; поддерживает фрагментацию |
+| **443** | TCP | Клиент → RU | XHTTP + Reality inbound (типично) | Основной stealth-порт при `core.stealth.xhttp.enabled: true` |
+| **8443** | TCP | Клиент → RU | Vision + Reality inbound (типично) | Дополнительный stealth-порт при `core.stealth.vision.enabled: true` |
+| **2053** | TCP | Клиент → RU | VLESS + TLS inbound (опционально) | При `core.stealth.tls.enabled: true`; поддерживает фрагментацию |
 | **8888** | TCP | Admin → RU | RioNexGate panel (nginx) | Меняется через `HTTP_PORT` в `.env`; в продакшене HTTPS |
-| **8080** | TCP | Local / debug | Backend API direct | Не нужен снаружи при проксировании nginx `/api` |
-| **8443** (example) | TCP | RU → EU | Exit relay inbound | Совпадает с `port` exit-узла и EU inbound; Vision типичен |
-| **443** (alternate) | TCP | RU → EU | Exit relay inbound | Если EU слушает 443 вместо 8443 |
+| **8080** | TCP | Локально / отладка | Backend API напрямую | Не нужен снаружи при проксировании nginx `/api` |
+| **8443** (пример) | TCP | RU → EU | Exit relay inbound | Совпадает с `port` exit-узла и EU inbound; Vision типичен |
+| **443** (альтернатива) | TCP | RU → EU | Exit relay inbound | Если EU слушает 443 вместо 8443 |
 | **10085** | TCP | Docker internal | Xray stats API | `core.xray.api_address`; не для клиентов |
 
 ### Минимальные правила файрвола
 
 | Правило | Источник | Назначение | Порт | Действие |
 |------|--------|-------------|------|--------|
-| Доступ клиентов | Internet / user networks | RU public IP | 443, 8443 (+ TLS port if used) | ALLOW |
-| Межузловой релей | RU private/public IP | EU public IP | Exit node port (e.g. 8443) | ALLOW |
-| Админ панели | Your admin IP(s) | RU public IP | 8888 or HTTPS | ALLOW (ограничить источник) |
-| EU-панель (опционально) | Your admin IP(s) | EU public IP | 8888 | ALLOW только если RioNexGate на EU |
-| Блокировка клиентов на EU | Internet | EU public IP | 443, 8443 | DENY если EU только релей (рекомендуется) |
+| Доступ клиентов | Интернет / сети пользователей | Публичный IP RU | 443, 8443 (+ TLS-порт при использовании) | ALLOW |
+| Межузловой релей | Приватный/публичный IP RU | Публичный IP EU | Порт exit-узла (напр. 8443) | ALLOW |
+| Админ панели | IP администратора | Публичный IP RU | 8888 или HTTPS | ALLOW (ограничить источник) |
+| EU-панель (опционально) | IP администратора | Публичный IP EU | 8888 | ALLOW только если RioNexGate на EU |
+| Блокировка клиентов на EU | Интернет | Публичный IP EU | 443, 8443 | DENY если EU только релей (рекомендуется) |
 
 ### Проверка связности
 
@@ -175,15 +175,15 @@ nc -zv ru.example.com 8443
 | RU | Entry | **Да** (основная) | `enabled: true`, `local_role: entry` | Inbound для клиентов, управление цепочками, outbound в EU |
 | EU | Exit | Опционально (локальный админ) | `enabled: false` (или не указывать) | Inbound-реле для entry; выход в Интернет |
 
-**Панель управления находится на entry-сервере.** Exit servers only need a matching Xray inbound for the relay credentials you store in the exit node record. Running RioNexGate on the EU host is convenient for user/credential management but not required for the chain itself.
+**Панель управления находится на entry-сервере.** Exit-серверам достаточно соответствующего Xray inbound для relay credentials, которые вы сохраняете в записи exit-узла. Запуск RioNexGate на EU удобен для управления пользователями и credentials, но для самой цепочки не обязателен.
 
 ### Когда регистрировать entry-узел
 
 Запись entry-узла **опциональна**, но рекомендуется когда:
 
-- `core.public_host` differs from the hostname clients should use (CDN, anycast, multiple RU IPs).
-- You run multiple entry servers and want per-user entry assignment.
-- You want the `/nodes` topology diagram to show the real client-facing endpoint.
+- `core.public_host` отличается от hostname, который должны видеть клиенты (CDN, anycast, несколько RU IP).
+- У вас несколько entry-серверов и нужно назначать entry на пользователя.
+- Нужна диаграмма топологии `/nodes` с реальным клиентским endpoint.
 
 Без entry-узла `ResolveClientEndpoint` использует `core.public_host` + `core.listen_port`.
 
@@ -197,7 +197,7 @@ nc -zv ru.example.com 8443
 
 #### A.1 Подготовка ОС
 
-1. Создайте Linux VPS (Ubuntu 22.04/24.04 or Debian 12 recommended) in Russia (or your entry region).
+1. Создайте Linux VPS (рекомендуется Ubuntu 22.04/24.04 или Debian 12) в России (или в вашем entry-регионе).
 2. Задайте hostname и часовой пояс:
 
 ```bash
@@ -329,13 +329,13 @@ limits:
 
 | Поле | Назначение |
 |-------|---------|
-| `core.type: xray` | Only Xray template emits multihop outbounds |
-| `core.multihop.enabled` | Master switch for chain generation |
-| `core.multihop.local_role: entry` | This host is the chain orchestrator |
-| `core.public_host` | Default entry hostname when no entry node is resolved |
-| `core.stealth.xhttp.port` | Port clients use for XHTTP profile (usually 443) |
-| `core.stealth.vision.port` | Port clients use for Vision profile (usually 8443) |
-| `core.stealth.reality.*` | Client-facing Reality parameters (separate from EU hop keys) |
+| `core.type: xray` | Только шаблон Xray генерирует multihop outbound |
+| `core.multihop.enabled` | Главный переключатель генерации цепочки |
+| `core.multihop.local_role: entry` | Этот хост — оркестратор цепочки |
+| `core.public_host` | Hostname entry по умолчанию, если entry-узел не разрешён |
+| `core.stealth.xhttp.port` | Порт для XHTTP-профиля клиентов (обычно 443) |
+| `core.stealth.vision.port` | Порт для Vision-профиля клиентов (обычно 8443) |
+| `core.stealth.reality.*` | Клиентские параметры Reality (отдельно от ключей EU hop) |
 
 #### A.6 Запуск RioNexGate и Xray
 
@@ -357,19 +357,19 @@ docker compose exec xray-core xray run -test -c /etc/xray/config.json
 
 ### Фаза B — EU exit-сервер
 
-You have two supported options. Both require a VLESS inbound that accepts the relay UUID from RU.
+Доступны два варианта. Оба требуют VLESS inbound, принимающий relay UUID с RU.
 
 #### Вариант B1 — Полный RioNexGate на EU (рекомендуется)
 
-**B1.1** Repeat A.1–A.3 on the EU VPS.
+**B1.1** Повторите A.1–A.3 на EU VPS.
 
-**B1.2** Generate a **separate** Reality keypair for the EU hop (do not reuse RU keys):
+**B1.2** Сгенерируйте **отдельную** пару Reality-ключей для EU hop (не переиспользуйте RU-ключи):
 
 ```bash
 docker run --rm ghcr.io/xtls/xray-core:latest x25519
 ```
 
-**B1.3** Configure EU `backend/config.yaml`:
+**B1.3** Настройте EU `backend/config.yaml`:
 
 ```yaml
 server:
@@ -422,25 +422,25 @@ limits:
   default_expire_days: 3650
 ```
 
-**B1.4** Start services:
+**B1.4** Запустите сервисы:
 
 ```bash
 make up
 make dev-cores
 ```
 
-**B1.5** Create relay user in EU panel:
+**B1.5** Создайте relay user в EU-панели:
 
-1. Open `http://eu.example.com:8888` (firewall-restricted).
+1. Откройте `http://eu.example.com:8888` (ограничьте файрволом).
 2. **Users** → **Add user**.
-3. Email: `relay@eu.internal` (any unique email).
-4. Copy the user's **UUID** from the user detail page — this becomes `credentials.uuid` on RU.
+3. Email: `relay@eu.internal` (любой уникальный email).
+4. Скопируйте **UUID** пользователя со страницы деталей — он станет `credentials.uuid` на RU.
 
-**B1.6** Record EU hop parameters for the RU exit node:
+**B1.6** Запишите параметры EU hop для exit-узла на RU:
 
 | Поле exit-узла на RU | Источник на EU |
 |--------------------|-----------|
-| `address` | `eu.example.com` (must be reachable from RU) |
+| `address` | `eu.example.com` (должен быть доступен с RU) |
 | `port` | `8443` (`core.stealth.vision.port`) |
 | `credentials.uuid` | Relay user UUID |
 | `credentials.public_key` | `core.stealth.reality.public_key` |
@@ -451,7 +451,7 @@ make dev-cores
 
 #### Вариант B2 — Standalone Xray на EU (минимальный)
 
-Use when you do not want a panel on EU. Create `/etc/xray/config.json`:
+Используйте, если панель на EU не нужна. Создайте `/etc/xray/config.json`:
 
 ```json
 {
@@ -502,9 +502,9 @@ Use when you do not want a panel on EU. Create `/etc/xray/config.json`:
 }
 ```
 
-Generate keys with `xray x25519`, replace `privateKey`, and use the matching **public** key and `shortIds` in the RU exit node credentials.
+Сгенерируйте ключи через `xray x25519`, замените `privateKey` и используйте соответствующий **публичный** ключ и `shortIds` в credentials exit-узла на RU.
 
-Start and test:
+Запуск и проверка:
 
 ```bash
 xray run -test -c /etc/xray/config.json
@@ -522,13 +522,13 @@ sudo ufw allow 8443/tcp
 
 1. Нажмите **Add node**.
 2. Заполните форму:
-   - **Name:** `entry-ru` (slug; used in UI only for entry nodes)
+   - **Name:** `entry-ru` (slug; только для UI entry-узлов)
    - **Role:** `Entry`
-   - **Address:** `ru.example.com` (what clients connect to)
-   - **Port:** `443` (primary XHTTP port; or `8443` if you only use Vision)
+   - **Address:** `ru.example.com` (куда подключаются клиенты)
+   - **Port:** `443` (основной XHTTP-порт; или `8443`, если только Vision)
    - **Region:** `RU`
-   - **Priority:** `10` (lower = preferred in auto selection)
-   - **Active:** checked
+   - **Priority:** `10` (меньше = предпочтительнее при авто-выборе)
+   - **Active:** отмечено
 3. Нажмите **Create**.
 
 Диаграмма топологии обновится и покажет `entry-ru` в блоке Entry.
@@ -537,20 +537,20 @@ sudo ufw allow 8443/tcp
 
 1. Нажмите **Add node**.
 2. Заполните форму:
-   - **Name:** `exit-eu` (becomes outbound tag `exit-exit-eu`)
+   - **Name:** `exit-eu` (станет outbound-тегом `exit-exit-eu`)
    - **Role:** `Exit`
    - **Address:** `eu.example.com`
    - **Port:** `8443`
    - **Region:** `EU`
    - **Priority:** `10`
    - **Protocol:** `vless`
-   - **Active:** checked
-3. Expand **Credentials** and enter UUID, Public key, Short ID (or paste full JSON via API — see below).
-4. Click **Create**.
+   - **Active:** отмечено
+3. Разверните **Credentials** и введите UUID, Public key, Short ID (или вставьте полный JSON через API — см. ниже).
+4. Нажмите **Create**.
 
-For full credentials (flow, network, path), use the API — the UI form exposes UUID, public key, and short ID only; additional fields require `POST /api/nodes` or `PUT /api/nodes/{id}`.
+Для полных credentials (flow, network, path) используйте API — форма UI показывает только UUID, public key и short ID; дополнительные поля — через `POST /api/nodes` или `PUT /api/nodes/{id}`.
 
-#### C.3 Health-check
+#### C.3 Проверка health-check
 
 1. В таблице **Exit nodes** нажмите **Health check** у `exit-eu`.
 2. Ожидайте зелёный **TCP OK (N мс)**, когда RU достигает `eu.example.com:8443`.
@@ -583,7 +583,7 @@ Backend вызывает `PUT /api/users/{id}/chain`, проверяет рол�
 
 ```bash
 curl -x socks5h://127.0.0.1:10808 https://ifconfig.me
-# or through your client's HTTP proxy
+# или через HTTP-прокси клиента
 curl https://ifconfig.me
 ```
 
@@ -613,14 +613,14 @@ curl https://ifconfig.me
 
 | Поле | Значение | Соответствие в сгенерированном outbound |
 |-------|-------|-------------------------------|
-| `uuid` | Relay user UUID on EU | `settings.vnext[].users[].id` |
+| `uuid` | Relay user UUID на EU | `settings.vnext[].users[].id` |
 | `flow` | `xtls-rprx-vision` | `settings.vnext[].users[].flow` |
 | `security` | `reality` | `streamSettings.security` |
 | `public_key` | EU Reality public key | `realitySettings.publicKey` |
 | `short_id` | EU short ID | `realitySettings.shortId` |
 | `fingerprint` | `firefox` | `realitySettings.fingerprint` |
 | `network` | `tcp` | `streamSettings.network` |
-| `sni` | Optional; defaults to exit `address` | `realitySettings.serverName` |
+| `sni` | Опционально; по умолчанию `address` exit-узла | `realitySettings.serverName` |
 
 ### Пример 2 — XHTTP + Reality (hop через XHTTP)
 
@@ -660,17 +660,17 @@ EU inbound должен открывать XHTTP с тем же `path` и `mode`
 
 | Поле | Обязательно | По умолчанию | Описание |
 |-------|----------|---------|-------------|
-| `uuid` | Yes (VLESS) | — | Relay user UUID on the exit server |
-| `encryption` | No | `none` | VLESS encryption (`EncryptionOrDefault()`) |
-| `flow` | For Vision | — | e.g. `xtls-rprx-vision` |
-| `security` | No | `none` | `reality`, `tls`, or `none` (`SecurityOrDefault()`) |
-| `public_key` | For Reality | — | Exit inbound Reality public key (`pbk`) |
-| `short_id` | For Reality | — | Exit inbound short ID |
-| `sni` | No | exit node `address` | TLS/Reality SNI in outbound |
-| `fingerprint` | No | `firefox` | uTLS fingerprint (`FingerprintOrDefault()`) |
-| `network` | No | `tcp` | `tcp` or `xhttp` (`NetworkOrDefault()`) |
-| `path` | For XHTTP | — | XHTTP path (must match EU inbound) |
-| `mode` | For XHTTP | — | XHTTP mode, typically `stream-one` |
+| `uuid` | Да (VLESS) | — | Relay user UUID на exit-сервере |
+| `encryption` | Нет | `none` | Шифрование VLESS (`EncryptionOrDefault()`) |
+| `flow` | Для Vision | — | напр. `xtls-rprx-vision` |
+| `security` | Нет | `none` | `reality`, `tls` или `none` (`SecurityOrDefault()`) |
+| `public_key` | Для Reality | — | Публичный Reality-ключ exit inbound (`pbk`) |
+| `short_id` | Для Reality | — | Short ID exit inbound |
+| `sni` | Нет | `address` exit-узла | TLS/Reality SNI в outbound |
+| `fingerprint` | Нет | `firefox` | uTLS fingerprint (`FingerprintOrDefault()`) |
+| `network` | Нет | `tcp` | `tcp` или `xhttp` (`NetworkOrDefault()`) |
+| `path` | Для XHTTP | — | XHTTP path (должен совпадать с EU inbound) |
+| `mode` | Для XHTTP | — | Режим XHTTP, обычно `stream-one` |
 
 Источник схемы: [`backend/internal/models/node.go`](../backend/internal/models/node.go).
 
@@ -678,20 +678,20 @@ EU inbound должен открывать XHTTP с тем же `path` и `mode`
 
 ## Анатомия Xray-конфига
 
-When `BuildMultihopData` returns `Enabled: true`, the xray template appends outbounds and a routing section.
+Когда `BuildMultihopData` возвращает `Enabled: true`, шаблон xray добавляет outbound и секцию routing.
 
 ### Логика генерации
 
-From `multihop.go`:
+Из `multihop.go`:
 
-1. `BuildMultihopData` runs only if `multihop.IsEntryNode()` and there is at least one exit node in the database.
-2. For each **active user** with a resolvable exit (`ResolveUserExitNode`), an outbound entry is created keyed by exit node ID.
-3. Outbound tag = `exit-<name>` via `Node.OutboundTag()`.
-4. User emails sharing the same exit are grouped into one routing rule targeting `exit-<name>-chain`.
+1. `BuildMultihopData` выполняется только если `multihop.IsEntryNode()` и в БД есть хотя бы один exit-узел.
+2. Для каждого **активного пользователя** с разрешённым exit (`ResolveUserExitNode`) создаётся outbound, привязанный к ID exit-узла.
+3. Тег outbound = `exit-<name>` через `Node.OutboundTag()`.
+4. Email пользователей с одним exit группируются в одно правило routing на `exit-<name>-chain`.
 
 ### Фрагмент шаблона — VLESS outbound на exit
 
-From `xray.json.tmpl` (lines 169–201):
+Из `xray.json.tmpl` (строки 169–201):
 
 ```json
 {
@@ -772,43 +772,43 @@ URL: `http://<ru-host>:8888/nodes`
 
 | Секция | Описание |
 |---------|-------------|
-| **Header** | Title "Multi-hop nodes" and **Add node** button |
-| **Topology** | `ChainTopology` component: Client → Entry → Exit → Internet. Shows lowest-priority **active** entry/exit when in auto mode |
-| **Entry nodes table** | All nodes with `role: entry` |
-| **Exit nodes table** | All nodes with `role: exit` |
+| **Header** | Заголовок «Multi-hop nodes» и кнопка **Add node** |
+| **Topology** | Компонент `ChainTopology`: Client → Entry → Exit → Internet. Показывает **активные** entry/exit с наименьшим priority в авто-режиме |
+| **Entry nodes table** | Все узлы с `role: entry` |
+| **Exit nodes table** | Все узлы с `role: exit` |
 
 ### Колонки и действия таблицы
 
 | Колонка / действие | Значение |
 |-----------------|---------|
-| Name | Unique slug; exit names determine outbound tags |
-| Address:Port | Target for health check and (exit) outbound dial |
-| Region | Informational label (e.g. RU, EU) |
-| Active / Inactive | Toggle; inactive nodes skipped in `ResolveUserEntryNode` / `ResolveUserExitNode` |
-| Health check | `GET /api/nodes/{id}/health` — TCP dial, 5s timeout |
-| Edit | Opens `NodeForm` modal |
-| Delete | Removes node; clears `entry_node_id` / `exit_node_id` on affected users |
+| Name | Уникальный slug; имена exit определяют outbound-теги |
+| Address:Port | Цель health-check и (для exit) outbound dial |
+| Region | Информационная метка (напр. RU, EU) |
+| Active / Inactive | Переключатель; неактивные узлы пропускаются в `ResolveUserEntryNode` / `ResolveUserExitNode` |
+| Health check | `GET /api/nodes/{id}/health` — TCP dial, таймаут 5 с |
+| Edit | Открывает модальное окно `NodeForm` |
+| Delete | Удаляет узел; очищает `entry_node_id` / `exit_node_id` у затронутых пользователей |
 
 ### Интерпретация health-check
 
 | Результат | Значение | Следующий шаг |
 |--------|---------|-----------|
-| `TCP OK (42ms)` | Port open from panel/backend host | Does **not** prove VLESS/Reality works — test with live traffic |
-| `connection refused` | Nothing listening on port | Start EU Xray; verify port in config |
-| `i/o timeout` | Firewall or routing block | Open EU firewall for RU source IP |
-| `address is empty` | Node record incomplete | Edit node, set address |
+| `TCP OK (42ms)` | Порт открыт с хоста панели/backend | **Не** доказывает работу VLESS/Reality — проверьте живым трафиком |
+| `connection refused` | На порту ничего не слушает | Запустите EU Xray; проверьте порт в конфиге |
+| `i/o timeout` | Блокировка файрволом или маршрутизацией | Откройте EU firewall для IP RU |
+| `address is empty` | Запись узла неполная | Отредактируйте узел, укажите address (адрес) |
 
-### Active и inactive
+### Активные и неактивные
 
-- **Inactive entry:** skipped for auto resolution; explicit `entry_node_id` pointing to inactive node falls back to `GetBestEntryNode()`.
-- **Inactive exit:** skipped for auto resolution; users with explicit inactive exit fall back to `GetBestExitNode()`; if none active, no multihop routing for that user.
+- **Неактивный entry:** пропускается при авторазрешении; явный `entry_node_id` на неактивный узел откатывается к `GetBestEntryNode()`.
+- **Неактивный exit:** пропускается при авторазрешении; пользователи с явным неактивным exit откатываются к `GetBestExitNode()`; если нет активных — multihop routing для них не создаётся.
 
 ### Зачем создавать entry-узел?
 
-Entry nodes decouple `core.public_host` from the client-visible endpoint. Use them when:
+Entry-узлы отделяют `core.public_host` от клиентского endpoint. Используйте их когда:
 
-- DNS points to a load balancer but links should show a specific hostname.
-- You assign different users to different entry IPs in the same panel.
+- DNS указывает на балансировщик, но в ссылках нужен конкретный hostname.
+- Назначаете разным пользователям разные entry IP в одной панели.
 
 ---
 
@@ -816,20 +816,20 @@ Entry nodes decouple `core.public_host` from the client-visible endpoint. Use th
 
 ### Рабочий процесс в UI (`/users/:id`)
 
-1. Open user detail page.
-2. **Multi-hop chain** section (`UserChainSection`):
-   - Mini topology diagram updates as you change selects.
-   - **Auto entry** / **Auto exit** — empty value → lowest priority active node.
+1. Откройте страницу пользователя.
+2. Секция **Multi-hop chain** (`UserChainSection`):
+   - Мини-диаграмма топологии обновляется при смене выбора.
+   - **Auto entry** / **Auto exit** — пустое значение → активный узел с наименьшим priority.
    - **Save chain** → `PUT /api/users/{id}/chain`.
 
 ### Порядок разрешения (код)
 
 `ResolveUserExitNode` (`db/nodes.go`):
 
-1. If `user.exit_node_id` set → load node; return if active and role `exit`.
-2. Else → `GetBestExitNode()` (lowest priority active exit).
+1. Если задан `user.exit_node_id` → загрузить узел; вернуть, если активен и роль `exit`.
+2. Иначе → `GetBestExitNode()` (активный exit с наименьшим priority).
 
-Same pattern for entry via `ResolveUserEntryNode`.
+Та же логика для entry через `ResolveUserEntryNode`.
 
 ### API — привязка цепочки
 
@@ -883,15 +883,15 @@ curl -s -X PUT http://localhost:8888/api/users/1 \
   }'
 ```
 
-Set `"clear_chain": true` to null both node IDs.
+Установите `"clear_chain": true`, чтобы обнулить оба ID узлов.
 
 ### Ответы с ошибками
 
 | HTTP | Тело | Причина |
 |------|------|-------|
-| 400 | `invalid entry node` | ID missing, wrong role, or not role `entry` |
-| 400 | `invalid exit node` | ID missing, wrong role, or not role `exit` |
-| 404 | `record not found` | User ID does not exist |
+| 400 | `invalid entry node` | ID отсутствует, неверная роль или не `entry` |
+| 400 | `invalid exit node` | ID отсутствует, неверная роль или не `exit` |
+| 404 | `record not found` | Пользователь с таким ID не существует |
 
 ---
 
@@ -899,16 +899,16 @@ Set `"clear_chain": true` to null both node IDs.
 
 ### Что содержат ссылки
 
-`BuildSubscriptionLinks` calls `ResolveClientEndpoint` then `GetClientLinkProfiles`:
+`BuildSubscriptionLinks` вызывает `ResolveClientEndpoint`, затем `GetClientLinkProfiles`:
 
-- Host = entry node address **or** `core.public_host`
-- Port = entry node port **or** `core.listen_port`
-- User UUID = end-user UUID (not relay UUID)
-- Stealth params = **RU entry** Reality keys, paths, modes
+- Host = address entry-узла **или** `core.public_host`
+- Port = порт entry-узла **или** `core.listen_port`
+- User UUID = UUID конечного пользователя (не relay UUID)
+- Stealth params = Reality-ключи, paths, modes **RU entry**
 
-Exit hostname, relay UUID, and EU Reality keys are **never** included.
+Hostname exit, relay UUID и Reality-ключи EU **никогда** не включаются.
 
-Example XHTTP link shape:
+Пример формата XHTTP-ссылки:
 
 ```
 vless://USER_UUID@ru.example.com:443?encryption=none&type=xhttp&security=reality&sni=www.microsoft.com&fp=firefox&pbk=RU_PUBLIC_KEY&sid=a1b2c3d4&path=%2Fapi%2Fv1%2Fdata&mode=stream-one#test%40example.com-xhttp
@@ -920,11 +920,11 @@ vless://USER_UUID@ru.example.com:443?encryption=none&type=xhttp&security=reality
 curl -s "http://ru.example.com:8888/api/subscription/TOKEN" | base64 -d
 ```
 
-Returns newline-separated links. Decode and verify host is `ru.example.com`, not `eu.example.com`.
+Возвращает ссылки, разделённые переводом строки. Декодируйте и проверьте, что host — `ru.example.com`, а не `eu.example.com`.
 
 ### RioNexTunnel / `GET /api/client/config`
 
-`BuildClientConfig` sets:
+`BuildClientConfig` устанавливает:
 
 ```json
 {
@@ -941,7 +941,7 @@ Returns newline-separated links. Decode and verify host is `ru.example.com`, not
 }
 ```
 
-RioNexTunnel connects to **entry only**. Multi-hop is transparent — chaining happens inside RU Xray after the client connects.
+RioNexTunnel подключается **только к entry**. Мульти-хоп прозрачен — цепочка формируется внутри RU Xray после подключения клиента.
 
 ### Поведение `ResolveClientEndpoint`
 
@@ -958,13 +958,13 @@ func ResolveClientEndpoint(publicHost string, listenPort int, user models.User, 
 }
 ```
 
-The `user` parameter is reserved for future per-user endpoint logic; currently unused.
+Параметр `user` зарезервирован для будущей per-user логики endpoint; сейчас не используется.
 
 ---
 
 ## Stealth и мульти-хоп вместе
 
-Typical production stack:
+Типичный продакшен-стек:
 
 | Участок | Транспорт | Порт | Назначение |
 |-----|-----------|------|---------|
@@ -974,19 +974,19 @@ Typical production stack:
 ### Чеклист конфигурации (RU entry)
 
 - [ ] `core.stealth.enabled: true`
-- [ ] RU Reality keys generated (`xray x25519`) — **different** from EU hop keys
+- [ ] RU Reality-ключи сгенерированы (`xray x25519`) — **отличные** от EU hop keys
 - [ ] `core.stealth.xhttp.enabled: true`, `mode: stream-one`
-- [ ] `core.stealth.vision.enabled: true` if offering Vision profile to clients
+- [ ] `core.stealth.vision.enabled: true`, если предлагаете Vision-профиль клиентам
 - [ ] `core.multihop.enabled: true`, `local_role: entry`
-- [ ] Exit node credentials match EU inbound (relay UUID, EU public key, short ID, flow)
+- [ ] Credentials exit-узла совпадают с EU inbound (relay UUID, EU public key, short ID, flow)
 
 ### Чеклист конфигурации (EU exit)
 
-- [ ] Separate Reality keypair from RU
-- [ ] Vision inbound on port matching exit node `port`
-- [ ] Relay user UUID active
+- [ ] Отдельная пара Reality-ключей от RU
+- [ ] Vision inbound на порту, совпадающем с `port` exit-узла
+- [ ] Relay user UUID активен
 - [ ] `core.multihop.enabled: false`
-- [ ] Firewall allows **only RU IP** on relay port (recommended)
+- [ ] Файрвол разрешает **только IP RU** на relay-порту (рекомендуется)
 
 ### Что видит DPI
 
@@ -998,11 +998,11 @@ Typical production stack:
 
 ## Примеры конфигурации
 
-### RU entry — full `backend/config.yaml`
+### RU entry — полный `backend/config.yaml`
 
-См. [Фаза A.5](#a5-настройка-ru-backendconfigyaml-построчно) for the annotated example.
+См. [Фаза A.5](#a5-настройка-ru-backendconfigyaml-построчно) для аннотированного примера.
 
-### EU exit — full `backend/config.yaml`
+### EU exit — полный `backend/config.yaml`
 
 См. [Вариант B1](#вариант-b1--полный-rionexgate-на-eu-рекомендуется).
 
@@ -1020,29 +1020,29 @@ Typical production stack:
 
 ## Справочник API
 
-Базовый URL: `http://localhost:8888/api` (nginx) or `http://localhost:8080/api` (backend).  
+Базовый URL: `http://localhost:8888/api` (nginx) или `http://localhost:8080/api` (backend).  
 Заголовок авторизации: `X-API-Key: <server.api_key>`
 
 | Метод | Endpoint | Описание |
 |--------|----------|-------------|
-| GET | `/nodes` | List all nodes (ordered by priority) |
-| POST | `/nodes` | Create node |
-| GET | `/nodes/{id}` | Get node |
-| PUT | `/nodes/{id}` | Update node |
-| DELETE | `/nodes/{id}` | Delete node; clear user chain refs |
-| GET | `/nodes/{id}/health` | TCP health check |
-| PUT | `/users/{id}/chain` | Set or clear user chain |
-| GET | `/users/{id}` | User detail with `entry_node_id`, `exit_node_id` |
-| GET | `/subscription/{token}` | Base64 subscription links |
-| GET | `/client/config?token=...` | RioNexTunnel JSON config |
+| GET | `/nodes` | Список всех узлов (по priority) |
+| POST | `/nodes` | Создать узел |
+| GET | `/nodes/{id}` | Получить узел |
+| PUT | `/nodes/{id}` | Обновить узел |
+| DELETE | `/nodes/{id}` | Удалить узел; очистить привязки цепочек |
+| GET | `/nodes/{id}/health` | TCP health-check |
+| PUT | `/users/{id}/chain` | Установить или сбросить цепочку |
+| GET | `/users/{id}` | Детали пользователя с `entry_node_id`, `exit_node_id` |
+| GET | `/subscription/{token}` | Base64-ссылки подписки |
+| GET | `/client/config?token=...` | JSON-конфиг RioNexTunnel |
 
-### List nodes
+### Список узлов
 
 ```bash
 curl -s -H "X-API-Key: YOUR_KEY" http://localhost:8888/api/nodes | jq .
 ```
 
-### Create exit node (full credentials)
+### Создание exit-узла (полные credentials)
 
 ```bash
 curl -s -X POST http://localhost:8888/api/nodes \
@@ -1061,7 +1061,7 @@ curl -s -X POST http://localhost:8888/api/nodes \
   }'
 ```
 
-### Create entry node
+### Создание entry-узла
 
 ```bash
 curl -s -X POST http://localhost:8888/api/nodes \
@@ -1078,7 +1078,7 @@ curl -s -X POST http://localhost:8888/api/nodes \
   }'
 ```
 
-OpenAPI: `GET /api/docs` — search for `Nodes` and `UpdateUserChain`.
+OpenAPI: `GET /api/docs` — ищите `Nodes` и `UpdateUserChain`.
 
 ---
 
@@ -1086,7 +1086,7 @@ OpenAPI: `GET /api/docs` — search for `Nodes` and `UpdateUserChain`.
 
 ### 1. Проверка health-check в панели
 
-Nodes → **Health check** on exit node. Expect `TCP OK`.
+Узлы → **Health check** у exit-узла. Ожидайте `TCP OK`.
 
 ### 2. Содержимое подписки
 
@@ -1095,7 +1095,7 @@ TOKEN="user_subscription_token"
 curl -s "http://localhost:8888/api/subscription/$TOKEN" | base64 -d | head -5
 ```
 
-Verify: host is entry; no `eu.example.com`; user UUID present.
+Проверьте: host — entry; нет `eu.example.com`; присутствует user UUID.
 
 ### 3. Тест Xray-конфига
 
@@ -1103,7 +1103,7 @@ Verify: host is entry; no `eu.example.com`; user UUID present.
 docker compose exec xray-core xray run -test -c /etc/xray/config.json
 ```
 
-Expect: `Configuration OK`.
+Ожидайте: `Configuration OK`.
 
 ### 4. Наличие тегов outbound
 
@@ -1113,18 +1113,18 @@ grep -E 'exit-exit-eu|exit-exit-eu-chain' data/xray/config.json
 
 ### 5. Живой egress IP
 
-Through connected client:
+Через подключённого клиента:
 
 ```bash
 curl https://ifconfig.me
 curl https://ipinfo.io/country
 ```
 
-Should show EU country/IP.
+Должна отображаться страна/IP EU.
 
 ### 6. Лог доступа Xray (отладка)
 
-Temporarily set `"loglevel": "debug"` in generated config (or enable via template edit), reload, watch inter-node connection:
+Временно установите `"loglevel": "debug"` в сгенерированном конфиге (или через правку шаблона), reload, наблюдайте межузловое соединение:
 
 ```bash
 docker compose logs -f xray-core
@@ -1142,28 +1142,28 @@ curl -s -H "X-API-Key: YOUR_KEY" http://localhost:8888/api/users/1 | jq '{email,
 
 | # | Симптом | Вероятная причина | Диагностика | Решение |
 |---|---------|--------------|-----------|-----|
-| 1 | Traffic exits from RU IP | No exit assigned; multihop off; no active exit | `jq '.routing' data/xray/config.json` empty? | Enable multihop; create exit; assign user |
-| 2 | No `exit-*` outbounds in config | `core.type: sing-box` | Check `core.type` | Switch to `xray` |
-| 3 | No outbounds despite xray | No user resolves to exit | List users' `exit_node_id`; check active exits | Assign exit; activate node |
-| 4 | `invalid exit node` API error | Wrong role or bad ID | `GET /api/nodes/{id}` | Set `role: exit` |
-| 5 | `invalid entry node` API error | Node is exit role | Check node role | Create entry node |
-| 6 | RU cannot reach EU | Firewall | `nc -zv eu.example.com 8443` from RU | Open port; check security groups |
-| 7 | Health OK, VLESS fails | Credentials mismatch | Compare JSON to EU inbound | Fix uuid, pbk, sid, flow |
-| 8 | Vision flow error | Missing `flow` on hop | Check outbound in config.json | Add `flow: xtls-rprx-vision` |
-| 9 | XHTTP hop fails | path/mode mismatch | Compare path/mode EU vs credentials | Align both sides |
-| 10 | Wrong SNI on hop | Default uses exit address | Set `credentials.sni` | Match EU `serverNames` |
-| 11 | Client shows EU host | Manual link or wrong panel | Decode subscription | Use panel links only |
-| 12 | Client shows wrong RU host | Stale entry node | `GET /api/users/1` | Update entry node address |
-| 13 | Duplicate outbound tags | Duplicate node `name` | `GET /api/nodes` | Rename — names are unique |
-| 14 | Chain worked, stopped | Exit set inactive | Check active toggle | Re-activate or reassign |
-| 15 | Relay user disabled on EU | User `active: false` | EU panel user list | Activate relay user |
-| 16 | `multihop.enabled: true` but no routing | `local_role` not `entry` | Check config | Set `local_role: entry` |
-| 17 | Config reload failed | Invalid JSON in credentials | Backend logs | Fix credentials JSON |
-| 18 | High latency | RU↔EU distance | Health check ms | Choose closer EU POP |
-| 19 | Partial users on EU | Mixed assignments | Per-user `exit_node_id` | Standardize or use auto |
-| 20 | Delete exit broke users | Expected — IDs cleared | Users show null exit | Reassign; auto-picks new best |
+| 1 | Трафик выходит с RU IP | Нет exit; multihop выкл.; нет активного exit | `jq '.routing' data/xray/config.json` пуст? | Включите multihop; создайте exit; назначьте пользователю |
+| 2 | Нет `exit-*` outbound в конфиге | `core.type: sing-box` | Проверьте `core.type` | Переключите на `xray` |
+| 3 | Нет outbound при xray | Ни один пользователь не разрешается к exit | Список `exit_node_id` пользователей; проверьте активные exit | Назначьте exit; активируйте узел |
+| 4 | Ошибка API `invalid exit node` | Неверная роль или ID | `GET /api/nodes/{id}` | Установите `role: exit` |
+| 5 | Ошибка API `invalid entry node` | Узел с ролью exit | Проверьте роль узла | Создайте entry-узел |
+| 6 | RU не достигает EU | Файрвол | `nc -zv eu.example.com 8443` с RU | Откройте порт; проверьте security groups |
+| 7 | Health OK, VLESS не работает | Несовпадение credentials | Сравните JSON с EU inbound | Исправьте uuid, pbk, sid, flow |
+| 8 | Ошибка Vision flow | Нет `flow` на hop | Проверьте outbound в config.json | Добавьте `flow: xtls-rprx-vision` |
+| 9 | XHTTP hop не работает | Несовпадение path/mode | Сравните path/mode EU и credentials | Согласуйте обе стороны |
+| 10 | Неверный SNI на hop | По умолчанию address exit | Установите `credentials.sni` | Совпадите с EU `serverNames` |
+| 11 | Клиент показывает EU host | Ручная ссылка или неверная панель | Декодируйте подписку | Используйте только ссылки панели |
+| 12 | Клиент показывает неверный RU host | Устаревший entry-узел | `GET /api/users/1` | Обновите address entry-узла |
+| 13 | Дублирующиеся outbound-теги | Дублирующееся `name` узла | `GET /api/nodes` | Переименуйте — имена уникальны |
+| 14 | Цепочка работала, перестала | Exit деактивирован | Проверьте переключатель active | Реактивируйте или переназначьте |
+| 15 | Relay user отключён на EU | `active: false` у пользователя | Список пользователей EU-панели | Активируйте relay user |
+| 16 | `multihop.enabled: true`, но нет routing | `local_role` не `entry` | Проверьте конфиг | Установите `local_role: entry` |
+| 17 | Reload конфига не удался | Невалидный JSON в credentials | Логи backend | Исправьте JSON credentials |
+| 18 | Высокая задержка | Расстояние RU↔EU | Мс health-check | Выберите ближайший EU POP |
+| 19 | Часть пользователей на EU | Смешанные назначения | Per-user `exit_node_id` | Стандартизируйте или используйте авто |
+| 20 | Удаление exit сломало пользователей | Ожидаемо — ID очищены | У пользователей null exit | Переназначьте; авто выберет новый лучший |
 
-**Credentials format:** valid JSON in the `credentials` string field. Escape quotes in curl (`\"`) or use `-d @exit-node.json`.
+**Формат credentials:** валидный JSON в строковом поле `credentials`. Экранируйте кавычки в curl (`\"`) или используйте `-d @exit-node.json`.
 
 ---
 
@@ -1185,29 +1185,29 @@ curl -s -H "X-API-Key: YOUR_KEY" http://localhost:8888/api/users/1 | jq '{email,
 - [ ] RU: `core.type: xray`
 - [ ] RU: `core.multihop.enabled: true`
 - [ ] RU: `core.multihop.local_role: entry`
-- [ ] RU: Reality keypair generated and configured
-- [ ] RU: Stealth presets tested ([stealth.ru.md](stealth.ru.md) checklist)
-- [ ] EU: Relay inbound listening on documented port
-- [ ] EU: Relay user created and active
-- [ ] EU: Separate Reality keys from RU
-- [ ] RU exit node: credentials match EU inbound exactly
-- [ ] RU exit node: `active: true`
-- [ ] RU entry node: client-facing `address:port` correct
-- [ ] RU → EU: TCP reachable (health check or `nc`)
-- [ ] Users: `exit_node_id` assigned or auto exit configured
-- [ ] Users: `entry_node_id` assigned or `public_host` correct
-- [ ] `xray run -test` passes on entry
-- [ ] Config contains `exit-<name>` and `exit-<name>-chain`
-- [ ] Routing rules map user emails to `-chain` tag
-- [ ] Subscription shows entry host only
-- [ ] Egress IP test shows EU
-- [ ] Panel API key rotated from default
-- [ ] Panel HTTPS enabled (or VPN-only access)
-- [ ] EU panel firewalled or not deployed
-- [ ] EU relay port restricted to RU IP
-- [ ] Monitoring on xray-core container health
-- [ ] Backup of `data/rionexgate.db` scheduled
-- [ ] Documented relay UUID and node IDs for disaster recovery
+- [ ] RU: пара Reality-ключей сгенерирована и настроена
+- [ ] RU: stealth-пресеты проверены (чеклист [stealth.ru.md](stealth.ru.md))
+- [ ] EU: relay inbound слушает документированный порт
+- [ ] EU: relay user создан и активен
+- [ ] EU: отдельные Reality-ключи от RU
+- [ ] RU exit-узел: credentials точно совпадают с EU inbound
+- [ ] RU exit-узел: `active: true`
+- [ ] RU entry-узел: клиентский `address:port` верен
+- [ ] RU → EU: TCP доступен (health-check или `nc`)
+- [ ] Пользователи: `exit_node_id` назначен или настроен авто exit
+- [ ] Пользователи: `entry_node_id` назначен или `public_host` верен
+- [ ] `xray run -test` проходит на entry
+- [ ] Конфиг содержит `exit-<name>` и `exit-<name>-chain`
+- [ ] Правила routing сопоставляют email пользователей с тегом `-chain`
+- [ ] Подписка показывает только entry host
+- [ ] Тест egress IP показывает EU
+- [ ] API key панели сменён с дефолтного
+- [ ] HTTPS панели включён (или доступ только через VPN)
+- [ ] EU-панель за файрволом или не развёрнута
+- [ ] EU relay-порт ограничен IP RU
+- [ ] Мониторинг здоровья контейнера xray-core
+- [ ] Запланирован бэкап `data/rionexgate.db`
+- [ ] Задокументированы relay UUID и ID узлов для восстановления
 
 ---
 
@@ -1267,7 +1267,7 @@ curl -s -H "X-API-Key: YOUR_KEY" http://localhost:8888/api/users/1 | jq '{email,
 
 ## Полные примеры API запросов/ответов
 
-### GET `/api/nodes/2` — exit node detail
+### GET `/api/nodes/2` — детали exit-узла
 
 Ответ:
 
@@ -1286,7 +1286,7 @@ curl -s -H "X-API-Key: YOUR_KEY" http://localhost:8888/api/users/1 | jq '{email,
 }
 ```
 
-### PUT `/api/nodes/2` — update credentials after EU key rotation
+### PUT `/api/nodes/2` — обновление credentials после ротации ключей EU
 
 ```bash
 curl -s -X PUT http://localhost:8888/api/nodes/2 \
@@ -1299,7 +1299,7 @@ curl -s -X PUT http://localhost:8888/api/nodes/2 \
 
 Вызывает `core.Reload()` — Xray подхватывает новый outbound без смены клиентских ссылок.
 
-### GET `/api/nodes/2/health` — failure example
+### GET `/api/nodes/2/health` — пример ошибки
 
 ```json
 {
@@ -1310,16 +1310,16 @@ curl -s -X PUT http://localhost:8888/api/nodes/2 \
 }
 ```
 
-### POST `/api/users` then chain — end-to-end
+### POST `/api/users` затем chain — сквозной пример
 
 ```bash
-# Create user
+# Создать пользователя
 curl -s -X POST http://localhost:8888/api/users \
   -H "X-API-Key: YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"email":"chain-test@example.com","traffic_gb":10,"expire_days":30}'
 
-# Assign chain (assume user id=3, entry=1, exit=2)
+# Назначить цепочку (предположим user id=3, entry=1, exit=2)
 curl -s -X PUT http://localhost:8888/api/users/3/chain \
   -H "X-API-Key: YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -1373,7 +1373,7 @@ curl -s -X PUT http://localhost:8888/api/users/3/chain \
 }
 ```
 
-Соответствующий exit-узел на RU: `port: 443`, credentials with `network: xhttp`, `path`, `mode`, no `flow`.
+Соответствующий exit-узел на RU: `port: 443`, credentials с `network: xhttp`, `path`, `mode`, без `flow`.
 
 ---
 
@@ -1394,4 +1394,4 @@ curl -s -X PUT http://localhost:8888/api/users/3/chain \
 - [stealth.ru.md](stealth.ru.md) — Reality, XHTTP, Vision на entry hop
 - [README.ru.md](../README.ru.md) — установка и Makefile
 - [docs/README.md](README.md) — индекс документации
-- OpenAPI: `GET /api/docs` — `Nodes` and `PUT /users/{id}/chain`
+- OpenAPI: `GET /api/docs` — `Nodes` и `PUT /users/{id}/chain`
