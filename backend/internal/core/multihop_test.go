@@ -88,6 +88,74 @@ func TestGenerateMultihopXrayConfig(t *testing.T) {
 	}
 }
 
+func TestMultihopStealthIncludesUsersInAllInbounds(t *testing.T) {
+	exit := models.Node{
+		ID:          2,
+		Name:        "RelayEU",
+		Address:     "exit.eu.example",
+		Port:        8443,
+		Role:        models.NodeRoleExit,
+		Protocol:    "vless",
+		Credentials: `{"uuid":"relay-uuid","flow":"xtls-rprx-vision","security":"reality","public_key":"pk","short_id":"ab12"}`,
+	}
+	userUUID := "e8e5b480-f5c8-4b76-b308-410a338d2c2c"
+	users := []models.User{{UUID: userUUID, Email: "test@test.test", ExitNodeID: &exit.ID}}
+	stealth := &config.StealthConfig{
+		Enabled: true,
+		Reality: config.StealthRealityConfig{
+			Dest:        "www.microsoft.com:443",
+			ServerNames: []string{"www.microsoft.com"},
+			PrivateKey:  "SNX6hIY7eBmqDCdiR9HhycMkyuKtRty3PqJnhgAsn3w",
+			PublicKey:   "Izo7I-b-XfLZP0jTBHhC3zzHZ02-oX57Z1JwB6fgABM",
+			ShortIDs:    []string{"a1b2c3d4"},
+		},
+		XHTTP: config.StealthXHTTPConfig{Enabled: true, Port: 443, Path: "/api/v1/data", Mode: "stream-one", Tag: "vless-xhttp-reality"},
+		Vision: config.StealthVisionConfig{Enabled: true, Port: 8443, Tag: "vless-vision-reality"},
+	}
+	multihop := BuildMultihopData(
+		&config.MultihopConfig{Enabled: true, LocalRole: "entry"},
+		users,
+		[]models.Node{exit},
+		func(models.User) *models.Node { return &exit },
+	)
+
+	raw, err := generateXrayConfig(443, "127.0.0.1:10085", users, stealth, multihop)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := string(raw)
+	if !strings.Contains(body, `"id": "`+userUUID+`"`) {
+		t.Fatalf("user UUID missing from generated config:\n%s", body)
+	}
+
+	var parsed map[string]interface{}
+	if err := json.Unmarshal(raw, &parsed); err != nil {
+		t.Fatalf("invalid json: %v", err)
+	}
+	inbounds, ok := parsed["inbounds"].([]interface{})
+	if !ok || len(inbounds) != 2 {
+		t.Fatalf("expected 2 stealth inbounds, got %d", len(inbounds))
+	}
+	for i, inbound := range inbounds {
+		ib, ok := inbound.(map[string]interface{})
+		if !ok {
+			t.Fatalf("inbound %d: unexpected type", i)
+		}
+		settings, ok := ib["settings"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("inbound %d: missing settings", i)
+		}
+		clients, ok := settings["clients"].([]interface{})
+		if !ok || len(clients) != 1 {
+			t.Fatalf("inbound %d: expected 1 client, got %+v", i, settings["clients"])
+		}
+		client, ok := clients[0].(map[string]interface{})
+		if !ok || client["id"] != userUUID {
+			t.Fatalf("inbound %d: unexpected client %+v", i, clients[0])
+		}
+	}
+}
+
 func TestBuildSubscriptionUsesEntryNode(t *testing.T) {
 	user := models.User{
 		UUID:  "550e8400-e29b-41d4-a716-446655440000",
