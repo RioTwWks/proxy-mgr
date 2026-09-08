@@ -96,12 +96,22 @@ func (m *manager) Reload() error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
+	if err := writeConfigAtomic(path, data); err != nil {
 		return err
 	}
 	log.Printf("core config written to %s (%d users)", path, len(users))
 	_ = m.reloadAWGConfig(users)
 	return nil
+}
+
+// writeConfigAtomic writes core config via a temp file + rename so watchers
+// never observe a partially written JSON file.
+func writeConfigAtomic(path string, data []byte) error {
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 func (m *manager) reloadAWGConfig(users []models.User) error {

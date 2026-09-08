@@ -1,5 +1,9 @@
 ARG XRAY_VERSION=26.3.27
 FROM teddysun/xray:${XRAY_VERSION}
 
-# Official Xray-core image; version pinned via build arg.
-# Update XRAY_VERSION in docker-compose.yml / .env when upgrading.
+# Restart xray when RioNexGate rewrites config.json (core.Reload).
+COPY scripts/xray-run.sh /usr/local/bin/xray-run.sh
+RUN chmod +x /usr/local/bin/xray-run.sh
+
+ENTRYPOINT ["/usr/local/bin/xray-run.sh"]
+CMD ["run", "-c", "/etc/xray/config.json"]
