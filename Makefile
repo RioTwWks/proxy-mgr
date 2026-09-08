@@ -29,7 +29,10 @@ dev: docker-check
 	$(DOCKER_COMPOSE) up --build
 
 dev-cores: docker-check
-	$(DOCKER_COMPOSE) --profile cores up -d xray-core sing-box
+	$(DOCKER_COMPOSE) --profile cores up -d xray-core
+
+dev-cores-singbox: docker-check
+	$(DOCKER_COMPOSE) --profile cores up -d sing-box
 
 dev-local:
 	@echo "Local development without Docker:"
